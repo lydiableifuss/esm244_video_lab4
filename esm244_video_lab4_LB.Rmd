@@ -134,3 +134,73 @@ sb_clip_tmap
 
 ```
 
+### 8. How to create an 'sf' object from lat/long recording (e.g. in an Excel file) THIS IS IMPORTANT!! 
+
+Make a mock dataset using tribble():
+
+```{r}
+
+my_example <- tribble(
+  ~id, ~lon, ~lat, #these are the three columns
+  "tiger", -119.4, 34.35,#these are the rows full o of data 
+  "lion", -119.41, 34.39,
+  "bear", -119.43, 34.38
+)
+
+#just because you create columns that say long and lat, does not mean that r knows it's spatial, you have to tell it! 
+
+# Convert this to 'sf' object:
+
+animals_sf <- st_as_sf(my_example, coords = c("lon", "lat"), crs = 4326) #now, r has created the geometry column with the lat and long coords! 
+
+```
+
+Make a map using tmap!
+
+```{r}
+
+animal_map <- tm_basemap("Stamen.Watercolor") +
+  tm_shape(animals_sf) +
+  tm_dots(labels = "id", col = "purple", size = 0.5) #using tm_dots because they are points
+
+#tmap is already in view mode based on above code chunk
+
+animal_map
+
+```
+
+
+### 8. Cloropleth of dam counts
+
+```{r}
+
+intersection <- st_intersection(x = ca_dams, y = ca_counties)
+
+dams_per_county <- intersection %>% 
+  group_by(NAME) %>% 
+  tally()
+
+#want to merge count data with county geometry data 
+ca_tot <- ca_counties %>% 
+  st_join(dams_per_county) %>% #we now see a NAME.x, which just means that it didn't want to copy over teh othr name column because they were slightly different
+  select(NAME.x, n) %>% 
+  rename(name = NAME.x)
+
+ca_tot_zero <- ca_tot %>% 
+  replace_na(list(n = 0))
+
+# One mor map example with ggplot:
+
+ggplot() +
+  geom_sf(data = ca_tot_zero,
+          aes(fill = n),
+          size = 0.2,
+          color = "white") +
+  scale_fill_continuous(low = "yellow", high = "red")
+
+```
+
+Vignettes for sf (google sf package in Github) - great resource!!
+
+Fee book: "Geocomputation with R" by Robin Lovelace, super helpful!
+
