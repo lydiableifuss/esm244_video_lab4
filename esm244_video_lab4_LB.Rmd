@@ -30,11 +30,107 @@ library(tmap)
 
 ### 2. Read in CA eco-regions data
 
-```{r}
-
+```{r, message = FALSE}
 #we want to read all of the parts of ca_eco all at once, all contain parts of spatial data, need read_sf package!
 
-ca_eco <- read_sf(dsn = "session_3_materials", layer = "ca_eco")
+ca_eco <- read_sf(dsn = "session_3_materials", layer = "ca_eco") %>% #geometry column looks like a disaster but contains all the needed spatial data (polygons, points, etc) and it is sticky (it holds onto/is retained no matter what cleaning/organizing you are doing)
+  select(US_L3NAME) %>% 
+  rename(region = US_L3NAME) %>% #going to simplify here, decreasing number of nodes that make up the outline of each polygon (probablyl would not do this in reality, will run faster in the lab)
+  st_simplify(dTolerance = 100) %>% 
+  st_transform(crs = 4326)
+
+plot(ca_eco) #just basic viz but already cool! 
+
+
+#please note, in the rmapshaper::ms_simplify(), and geos::gSimplify also reshape polygons, there are options 
 ```
 
+**You can always check the projections/coordinate reference system (CRS) (in console, use st_crs(sf object name) or in this case st_crs(ca_eco), we can set the projection by piping onto ca_eco!** 
+
+### 3. Read in CA Counties polygons
+
+```{r}
+
+ca_counties <- read_sf(dsn = "session_3_materials", layer = "california_county_shape_file")
+
+st_crs(ca_counties) = 4326 #since there wasn't an existing crs, set it to be 4326
+
+
+```
+
+### 4. Read in CA dams locations & data
+
+```{r}
+
+ca_dams <- read_sf(dsn = "session_3_materials", layer = "California_Jurisdictional_Dams")
+
+#in geometry, just has lat and long because it is point data
+
+#checked crs in console and is already set to 4326! Good to go 
+```
+
+### 5. Make a map of dams in California, overlayed on eco-regions, with outlines of CA counties 
+
+```{r}
+#ggplot works well with spacial data (needs to know ggplot, data, and geometry to produce)
+
+#don't give x and y with spatial data because it recognizes lat and long from geometry column 
+
+ggplot(data = ca_counties) +
+  geom_sf(color = "black",
+          size = 0.1) + #you are only changing things in aes (aestetics) when they depend on a a specific variable in the dataset 
+  geom_sf(data = ca_eco,
+          aes(fill = region), #lower the alpha gets from 1, the more transparent it will be, color is for the outlines and with NA there is no outline
+          alpha = 0.5, color = NA,
+          show.legend = FALSE) +
+  geom_sf(data = ca_dams,
+          size = 0.5,
+          alpha = 0.5) +
+  theme_minimal()
+```
+
+### 6. Just explore SB county eco-regions
+
+```{r}
+#going to look at SB county, so where Name = Santa Barbara  (use filter to keep based on rows)
+
+sb <- ca_counties %>% 
+  filter(NAME == "Santa Barbara")
+
+# Clip eco-region data to only include information within SB county - use st_intersection() 
+
+eco_clip <- st_intersection(ca_eco, sb)
+
+# Now let's plot it! Good to check in on what happened: ggplot2
+
+ggplot() +
+  geom_sf(data = ca_counties, 
+          fill = "gray90", 
+          color = "gray80",
+          size = 0.2) +
+  geom_sf(data = eco_clip,
+          aes(fill = region),
+          color = "white",
+          size = 0.4,
+          show.legend = FALSE) +
+  coord_sf(xlim = c(-121, -119), ylim = c(33.5, 35.5)) + #can change a lot with coord_sf 
+  scale_fill_manual(values = c("magenta", "gold2", "blue")) 
+```
+
+
+### 7. Create an interactive map with tmap
+
+```{r}
+# go to leaflet-extras.github.io (BASE MAPS!!!)
+
+sb_clip_tmap <- tm_basemap("Esri.WorldImagery") +
+  tm_shape(eco_clip) + 
+  tm_fill("region", palette = c("orange", "purple", "yellow"), alpha = 0.5)
+
+#to make interactive need to net to tmap_mode("view"")
+
+tmap_mode("view")
+sb_clip_tmap
+
+```
 
