@@ -1,0 +1,40 @@
+---
+title: "esm244_video_lab4_LB"
+author: "Lydia Bleifuss"
+date: "1/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+#Header, put a space after the # to make header font, with more #, smaller headers, any text with out a # in front is normal text
+
+### 1. Attach necessary packages
+
+We'll be using the **tidyverse**, **sf**, **tmap** packages! 
+
+** on either side of text makes it bold!
+
+Command + Option + I to add a code chunk
+
+```{r, include = FALSE}
+## above, to make code messaging not show up, in {r, include = FALSE}, now nothign from this code chunk shows up, messages = FALSE, and echo = FALSE area also helpful (also can look at Help, Rmarkdown cheat sheet to see these different options)
+
+library(tidyverse)
+library(sf)
+library(tmap)
+```
+
+### 2. Read in CA eco-regions data
+
+```{r}
+
+#we want to read all of the parts of ca_eco all at once, all contain parts of spatial data, need read_sf package!
+
+ca_eco <- read_sf(dsn = "session_3_materials", layer = "ca_eco")
+```
+
+
